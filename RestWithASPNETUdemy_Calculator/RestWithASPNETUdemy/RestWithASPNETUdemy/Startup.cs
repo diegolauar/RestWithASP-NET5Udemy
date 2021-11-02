@@ -13,18 +13,26 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using RestWithASPNETUdemy.Model;
 using RestWithASPNETUdemy.Model.Context;
-using RestWithASPNETUdemy.Services.Implementations;
+using RestWithASPNETUdemy.Business.Implementations;
+using RestWithASPNETUdemy.Repository.Implementations;
+using Serilog;
 
 namespace RestWithASPNETUdemy
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public IConfiguration Configuration { get; }
+        public IWebHostEnvironment Environment { get; }
+
+        public Startup(IConfiguration configuration, IWebHostEnvironment environment)
         {
             Configuration = configuration;
-        }
+            Environment = environment;
 
-        public IConfiguration Configuration { get; }
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .CreateLogger();
+        }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -34,8 +42,19 @@ namespace RestWithASPNETUdemy
             var connection = Configuration["MySQLConnection:MySQLConnectionString"];
             services.AddDbContext<MySQLContext>(options => options.UseMySql(connection));
 
+            if (Environment.IsDevelopment())
+            {
+                MigrateDatabase(connection);
+            }
+
+            services.AddApiVersioning();
+
             //Injeção de dependendncia
-            services.AddScoped<IPersonService, PersonServiceImplementation>();
+            services.AddScoped<IPersonBusiness, PersoBusinessImplementation>();
+            services.AddScoped<IPersonRepository, PersonRepositoryImplementation>();
+
+            services.AddScoped<IBooksBusiness, BooksBusinessImplementation>();
+            services.AddScoped<IBooksRepository, BooksRepositoryImplementation>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -56,6 +75,25 @@ namespace RestWithASPNETUdemy
             {
                 endpoints.MapControllers();
             });
+        }
+
+        private void MigrateDatabase(string connection)
+        {
+            try
+            {
+                var evolveConnection = new MySql.Data.MySqlClient.MySqlConnection(connection);
+                var evolve = new Evolve.Evolve(evolveConnection, msg => Log.Information(msg))
+                {
+                    Locations = new List<string> { "db/migrations", "db/dataset" },
+                    IsEraseDisabled = true,
+                };
+                evolve.Migrate();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Database migration failed", ex);
+                throw;
+            }
         }
     }
 }
