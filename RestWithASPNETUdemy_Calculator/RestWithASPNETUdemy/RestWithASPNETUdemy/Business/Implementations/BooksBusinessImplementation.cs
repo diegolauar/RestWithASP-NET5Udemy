@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using RestWithASPNETUdemy.Data.Converter.Implementation;
 using RestWithASPNETUdemy.Model;
 using RestWithASPNETUdemy.Model.Context;
 using RestWithASPNETUdemy.Repository.Implementations;
@@ -13,29 +14,36 @@ namespace RestWithASPNETUdemy.Business.Implementations
     {
         private readonly IRepository<Books> _repository;
 
+        private readonly BooksConverter _converter;
+
         public BooksBusinessImplementation(IRepository<Books> repository)
         {
             _repository = repository;
+            _converter = new BooksConverter();
         }
 
-        public Books Create(Books books)
+        public BooksVO Create(BooksVO books)
         {
-            return _repository.Create(books);
+            var booksEntity = _converter.Parse(books);
+            booksEntity = _repository.Create(booksEntity);
+            return _converter.Parse(booksEntity);
         }
 
-        public Books FindById(long id)
+        public BooksVO FindById(long id)
         {
-            return _repository.FindById(id);
+            return _converter.Parse(_repository.FindById(id));
         }
 
-        public List<Books> FindAll()
+        public List<BooksVO> FindAll()
         {
-            return _repository.FindAll();
+            return _converter.Parse(_repository.FindAll());
         }
 
-        public Books Update(Books books)
+        public BooksVO Update(BooksVO books)
         {
-            return _repository.Update(books);
+            var booksEntity = _converter.Parse(books);
+            booksEntity = _repository.Update(booksEntity);
+            return _converter.Parse(booksEntity);
         }
 
         public void Delete(long id)

@@ -5,13 +5,13 @@ namespace RestWithASPNETUdemy.Business.Implementations
 {
     public interface IBooksBusiness
     {
-        Books Create(Books books);
+        BooksVO Create(BooksVO books);
 
-        Books FindById(long id);
+        BooksVO FindById(long id);
 
-        List<Books> FindAll();
+        List<BooksVO> FindAll();
 
-        Books Update(Books books);
+        BooksVO Update(BooksVO books);
 
         void Delete(long id);
     }
